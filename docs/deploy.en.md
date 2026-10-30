@@ -128,7 +128,7 @@ ok: traffic leaves from the exit server (198.51.100.7)
 | Task | Command |
 | --- | --- |
 | Issue a key | `./scripts/vpnctl.sh add anna` |
-| Show the config and QR again | `./scripts/vpnctl.sh show anna` |
+| QR of an existing client again (asks to save a copy) | `./scripts/vpnctl.sh show anna` |
 | Revoke a key | `./scripts/vpnctl.sh remove anna` |
 | List (name, IP, last handshake) | `./scripts/vpnctl.sh list` |
 

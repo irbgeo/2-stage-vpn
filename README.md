@@ -25,7 +25,7 @@ To let clients connect by a domain name instead of the IP, point an A record at 
 ## Issue a key
 
 ```bash
-./scripts/vpnctl.sh add anna  # secret/clients/anna.conf + QR code in the terminal
+./scripts/vpnctl.sh add anna  # secret/clients/anna.conf, QR code in the terminal, asks to save a copy here
 ```
 
 The client installs **AmneziaVPN** and imports the `.conf` file or scans the QR code.
@@ -33,7 +33,7 @@ The client installs **AmneziaVPN** and imports the `.conf` file or scans the QR 
 ## Other commands
 
 ```bash
-./scripts/vpnctl.sh show anna     # the config and QR code again
+./scripts/vpnctl.sh show anna     # QR code of an existing client again (+ the same question)
 ./scripts/vpnctl.sh remove anna   # revoke the key
 ./scripts/vpnctl.sh list          # name, IP, last handshake
 make test                         # tests

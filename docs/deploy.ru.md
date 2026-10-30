@@ -128,7 +128,7 @@ ok: traffic leaves from the exit server (198.51.100.7)
 | Задача | Команда |
 | --- | --- |
 | Выдать ключ | `./scripts/vpnctl.sh add anna` |
-| Показать конфиг и QR ещё раз | `./scripts/vpnctl.sh show anna` |
+| QR существующего клиента ещё раз (спросит, сохранить ли копию) | `./scripts/vpnctl.sh show anna` |
 | Отозвать ключ | `./scripts/vpnctl.sh remove anna` |
 | Список (имя, IP, последнее подключение) | `./scripts/vpnctl.sh list` |
 

@@ -3,9 +3,10 @@
 # and `make deploy`.
 #
 #   init            access file templates + secret/tunnel.yaml (keeps existing files)
-#   add <name>      new client: secret/clients/<name>.conf + QR (Endpoint =
+#   add <name>      new client: secret/clients/<name>.conf, QR, asks to save a
+#                   copy to the current folder (Endpoint =
 #                   `endpoint:` of the entry access file, else its `host:`)
-#   show <name>     the conf and QR of a client again (local copy, no ssh)
+#   show <name>     QR of an existing client + the same question (local copy, no ssh)
 #   remove <name>   delete the client on the server and its local conf
 #   list            clients on the server: name, IP, last handshake
 #   status          tunnel, routing rule, table 100, external IP via the exit
@@ -53,12 +54,23 @@ cmd_init() {
   "$ROOT/scripts/tunnel-keys.sh"
 }
 
-# show_conf <file> — the conf and its QR code.
+# show_conf <file> — its QR code, then asks to save a copy to the current
+# folder (to send it on). The copy in secret/clients stays either way.
 show_conf() {
-  cat "$1"
-  echo
+  local copy ans=""
+  copy="$PWD/$(basename "$1")"
   qrencode -t ansiutf8 <"$1"
-  echo "saved in $1"
+  echo "kept in $1"
+  printf 'Save a copy to %s? [y/N] ' "$copy"
+  read -r ans || true
+  echo
+  [[ "$ans" == [yY]* ]] || return 0
+  if [[ -e "$copy" ]]; then
+    echo "$copy already exists, not saved"
+    return 0
+  fi
+  (umask 077 && cp "$1" "$copy")
+  echo "saved $copy"
 }
 
 cmd_add() {

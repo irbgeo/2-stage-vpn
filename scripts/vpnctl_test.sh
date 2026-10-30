@@ -21,14 +21,17 @@ printf '#!/usr/bin/env bash\necho "qrencode $*" >>"$CALLS"\ncat >/dev/null\necho
 chmod +x "$TMP/bin"/*
 
 S="$TMP/secret"
-# vc <args...> — runs vpnctl.sh against the temp secret dir; output in $TMP/out.
+W="$TMP/work"
+mkdir "$W"
+# vc <args...> — runs vpnctl.sh in $W against the temp secret dir; output in
+# $TMP/out. $ANSWER is typed at the "save a copy?" question (none: no input).
 vc() {
   : >"$TMP/calls"
   : >"$TMP/stdin"
-  env CALLS="$TMP/calls" STDIN_LOG="$TMP/stdin" PATH="$TMP/bin:$PATH" \
+  printf '%s' "${ANSWER:-}" | (cd "$W" && env CALLS="$TMP/calls" STDIN_LOG="$TMP/stdin" PATH="$TMP/bin:$PATH" \
     ENTRY_ACCESS_FILE="$S/entry-access.yaml" EXIT_ACCESS_FILE="$S/exit-access.yaml" \
     TUNNEL_FILE="$S/tunnel.yaml" CLIENTS_DIR="$S/clients" \
-    bash "$DIR/vpnctl.sh" "$@" >"$TMP/out" 2>&1
+    bash "$DIR/vpnctl.sh" "$@") >"$TMP/out" 2>&1
 }
 
 # --- init
@@ -62,7 +65,10 @@ pub_of() { { printf '302e020100300506032b656e04220420' | xxd -r -p; printf '%s' 
 check "add: the public key of the private one goes to the server, then the PSK" "$(pub_of "$priv")|$psk" "$pub_sent|$(sed -n 2p "$TMP/stdin")"
 check "add: the private key never leaves this machine" "0" "$(grep -c "$priv" "$TMP/stdin")"
 check "add: no secret in ssh argv" "0 0 0" "$(grep -cF "$priv" "$TMP/calls") $(grep -cF "$psk" "$TMP/calls") $(grep -cF "$pub_sent" "$TMP/calls")"
-check "add: QR printed" "1 1" "$(grep -c '^qrencode -t ansiutf8' "$TMP/calls") $(grep -c '^QR$' "$TMP/out")"
+check "add: QR printed, the conf text is not" "1 1 0" \
+  "$(grep -c '^qrencode -t ansiutf8' "$TMP/calls") $(grep -c '^QR$' "$TMP/out") $(grep -cF "$priv" "$TMP/out")"
+check "add: asks to save, no answer: no copy here" "1 0" \
+  "$(grep -c 'Save a copy to .*/anna.conf? \[y/N\]' "$TMP/out") $([[ -e "$W/anna.conf" ]] && echo 1 || echo 0)"
 
 vc add anna
 check "add an existing local name: refused, no ssh" "1 1 0" "$([[ $? -ne 0 ]] && echo 1) $(grep -c 'error: .*anna.conf already exists' "$TMP/out") $(grep -c '^ssh' "$TMP/calls")"
@@ -91,7 +97,15 @@ printf 'host: 203.0.113.10\nuser: deploy\n' >"$S/entry-access.yaml"
 
 # --- show
 vc show anna
-check "show: conf and QR, no ssh" "0 1 1 0" "$? $(grep -cx 'Address = 10.8.0.5/32' "$TMP/out") $(grep -c '^QR$' "$TMP/out") $(grep -c '^ssh' "$TMP/calls")"
+check "show: QR, no ssh, no copy without yes" "0 1 0 0" "$? $(grep -c '^QR$' "$TMP/out") $(grep -c '^ssh' "$TMP/calls") $([[ -e "$W/anna.conf" ]] && echo 1 || echo 0)"
+ANSWER=n vc show anna
+check "show: answer n: no copy" "0 0" "$? $([[ -e "$W/anna.conf" ]] && echo 1 || echo 0)"
+ANSWER=y vc show anna
+check "show: answer y: the same conf saved here, 600" "0 1 600" "$? $(cmp -s "$C" "$W/anna.conf" && echo 1) $(mode "$W/anna.conf")"
+echo old >"$W/anna.conf"
+ANSWER=y vc show anna
+check "show: a file is already here: not replaced, says so" "0 old 1" "$? $(cat "$W/anna.conf") $(grep -c 'already exists, not saved' "$TMP/out")"
+rm "$W/anna.conf"
 vc show nobody
 check "show a missing client: fails" "1" "$([[ $? -ne 0 ]] && echo 1)"
 
