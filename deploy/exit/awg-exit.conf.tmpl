@@ -1,0 +1,26 @@
+[Interface]
+Address = 10.255.255.2/30
+PrivateKey = @EXIT_PRIVATE@
+ListenPort = @PORT@
+MTU = 1380
+Jc = @JC@
+Jmin = @JMIN@
+Jmax = @JMAX@
+S1 = @S1@
+S2 = @S2@
+S3 = 0
+S4 = 0
+H1 = @H1@
+H2 = @H2@
+H3 = @H3@
+H4 = @H4@
+# Forwarding, NAT for the entry server only and the second guard (the tunnel may
+# not reach private/link-local networks): deploy/exit/exit-fw.sh, installed
+# by deploy/exit/install.sh.
+PostUp = /usr/local/sbin/vpn-exit-fw.sh up %i
+PostDown = /usr/local/sbin/vpn-exit-fw.sh down %i
+
+[Peer]
+PublicKey = @RU_PUBLIC@
+PresharedKey = @PSK@
+AllowedIPs = 10.255.255.1/32

@@ -1,0 +1,17 @@
+# Clamps the TCP MSS of forwarded connections to the path MTU of the VPN
+# interfaces (MTU 1380 on awg0 and awg-exit): a full packet plus AmneziaWG
+# overhead must fit the 1460 of the network under the tunnel, or it gets
+# fragmented. Covers TCP only; UDP relies on the MTU in client configs.
+[Unit]
+Description=Clamp TCP MSS for VPN traffic (awg0, awg-exit)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'for o in awg0 awg-exit; do R="FORWARD -o $$o -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"; iptables -t mangle -C $$R 2>/dev/null || iptables -t mangle -A $$R; done'
+ExecStop=/bin/sh -c 'for o in awg0 awg-exit; do iptables -t mangle -D FORWARD -o $$o -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu || true; done'
+
+[Install]
+WantedBy=multi-user.target

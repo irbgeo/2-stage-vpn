@@ -1,0 +1,16 @@
+# Every 15 s (vpn-routes-check.timer): put the ip rule and the table-100
+# routes back if anything dropped them (networkd reconfiguring a link, a
+# manual `netplan apply`). `rules` loads the nft table only when it is gone
+# (an `nft flush ruleset`, a start of nftables.service).
+[Unit]
+Description=Re-assert the VPN routing rule, routes and nft table
+After=vpn-routes.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/vpn/vpn-routes.sh rules
+# Keep systemd's "Started/Finished" (info) out of the journal, but log what
+# the script prints (it only prints when something is wrong) as a warning,
+# so it passes the filter.
+LogLevelMax=notice
+SyslogLevel=warning

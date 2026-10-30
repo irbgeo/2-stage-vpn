@@ -1,0 +1,22 @@
+# Routing of VPN clients (deploy/vpn.nft): marked client packets go to table
+# 100 = the exit tunnel, and never fall back to the main table (fail closed:
+# no tunnel, no internet for clients). Runs before both tunnels and has no
+# ExecStop, so the rule and the `unreachable` route stay across tunnel
+# restarts. The `default dev awg-exit` route comes from the tunnel conf's
+# PostUp and goes away with the interface.
+[Unit]
+Description=Routing of VPN clients through awg-exit
+Before=vpn-awg0.service vpn-awg-exit.service
+# nftables.service flushes the whole ruleset when it starts: load ours after it
+After=nftables.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# reload (deploy) re-applies the same idempotent steps: a restart would also
+# restart vpn-awg0.service (Requires=) and drop every client
+ExecStart=/opt/vpn/vpn-routes.sh
+ExecReload=/opt/vpn/vpn-routes.sh
+
+[Install]
+WantedBy=multi-user.target

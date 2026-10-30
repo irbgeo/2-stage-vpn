@@ -1,0 +1,4 @@
+# Tests write fake commands with printf and single quotes on purpose
+# (SC2016), check exit codes through $? (SC2181) and source testlib.sh by a
+# computed path (SC1091).
+disable=SC2016,SC2181,SC1091

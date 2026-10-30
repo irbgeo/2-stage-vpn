@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Two-server VPN: client traffic path",
+    "output": "docs/diagrams/vpn-network.html",
+    "locale": "en",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "admin",
+      "type": "external",
+      "label": "Your computer",
+      "sublabel": "vpnctl.sh, secret/",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "client",
+      "type": "frontend",
+      "label": "Client",
+      "sublabel": "AmneziaVPN, 10.8.0.X",
+      "pos": [
+        40,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "vpn_peer",
+      "type": "backend",
+      "label": "vpn-peer",
+      "sublabel": "clients in awg0.conf",
+      "pos": [
+        280,
+        40
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "awg0",
+      "type": "backend",
+      "label": "awg0",
+      "sublabel": "10.8.0.1/22, UDP 443",
+      "pos": [
+        280,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "timer",
+      "type": "backend",
+      "label": "Self-check",
+      "sublabel": "vpn-routes-check",
+      "pos": [
+        520,
+        40
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "routing",
+      "type": "security",
+      "label": "nft + ip rule",
+      "sublabel": "mark → table 100",
+      "pos": [
+        520,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "unbound",
+      "type": "backend",
+      "label": "unbound",
+      "sublabel": "DNS 10.8.0.1:53",
+      "pos": [
+        400,
+        380
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "tunnel_in",
+      "type": "backend",
+      "label": "awg-exit",
+      "sublabel": "10.255.255.1, NAT",
+      "pos": [
+        760,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "tunnel_out",
+      "type": "backend",
+      "label": "awg-exit",
+      "sublabel": "10.255.255.2",
+      "pos": [
+        1000,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "nat",
+      "type": "security",
+      "label": "exit-fw.sh",
+      "sublabel": "NAT for .1 only",
+      "pos": [
+        1240,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "internet",
+      "type": "cloud",
+      "label": "Internet",
+      "sublabel": "sees the exit IP",
+      "pos": [
+        1480,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Entry server",
+      "wraps": [
+        "vpn_peer",
+        "awg0",
+        "timer",
+        "routing",
+        "unbound",
+        "tunnel_in"
+      ],
+      "pad": 22
+    },
+    {
+      "kind": "region",
+      "label": "Exit server",
+      "wraps": [
+        "tunnel_out",
+        "nat"
+      ],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "from": "client",
+      "to": "awg0",
+      "label": "UDP 443",
+      "variant": "emphasis"
+    },
+    {
+      "from": "awg0",
+      "to": "routing",
+      "label": "mark 0x1",
+      "variant": "emphasis"
+    },
+    {
+      "from": "routing",
+      "to": "tunnel_in",
+      "label": "table 100",
+      "variant": "emphasis"
+    },
+    {
+      "from": "tunnel_in",
+      "to": "tunnel_out",
+      "label": "AWG tunnel",
+      "variant": "emphasis"
+    },
+    {
+      "from": "tunnel_out",
+      "to": "nat",
+      "label": "forward",
+      "variant": "emphasis"
+    },
+    {
+      "from": "nat",
+      "to": "internet",
+      "label": "MASQUERADE",
+      "variant": "emphasis"
+    },
+    {
+      "from": "admin",
+      "to": "vpn_peer",
+      "label": "ssh, stdin",
+      "variant": "security"
+    },
+    {
+      "from": "vpn_peer",
+      "to": "awg0",
+      "label": "syncconf"
+    },
+    {
+      "from": "timer",
+      "to": "routing",
+      "label": "every 15 s",
+      "variant": "dashed"
+    },
+    {
+      "from": "awg0",
+      "to": "unbound",
+      "label": "DNS :53"
+    },
+    {
+      "from": "unbound",
+      "to": "routing",
+      "label": "DoT, 0x1"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Fail-closed",
+      "items": [
+        "Tunnel down: only the unreachable route is left in table 100, clients have no internet",
+        "ip rule gone: vpn_forward drops a marked packet that does not leave via awg-exit",
+        "The self-check restores the rule, the routes and the nft table within 15 s"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Guards",
+      "items": [
+        "Clients do not see each other",
+        "Private networks and 169.254.169.254 are closed on both servers",
+        "On the entry server clients reach only DNS and ping",
+        "Client IPv6 is dropped"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "DNS without leaks",
+      "items": [
+        "unbound answers clients on 10.8.0.1",
+        "Its own queries (DoT to 1.1.1.1) get mark 0x1, so they leave through the exit server"
+      ]
+    }
+  ]
+}

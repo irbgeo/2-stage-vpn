@@ -1,0 +1,18 @@
+[Unit]
+Description=AmneziaWG tunnel between the entry and the exit server (awg-exit)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=-/usr/bin/awg-quick down awg-exit
+ExecStart=/usr/bin/awg-quick up awg-exit
+ExecStop=/usr/bin/awg-quick down awg-exit
+# a failed start (the network or the exit host's name not ready at boot) is
+# tried again; without the tunnel clients have no internet
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

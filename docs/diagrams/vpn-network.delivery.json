@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "f6010c8a-e676-4335-8425-0e2d02af8818",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/geo/projects/_own/2-stage-vpn/docs/diagrams/vpn-network.json",
+  "output": "/Users/geo/projects/_own/2-stage-vpn/docs/diagrams/vpn-network.html",
+  "specification": {
+    "sha256": "c6c965a9c01551b8587635f083a43e2411c3b2a61d58d7a8e65c021db55c9c70",
+    "bytes": 5225
+  },
+  "artifact": {
+    "sha256": "768a75c9a05025eae302493708ea188e28a78efa69eef16396fccb5c41b1479a",
+    "bytes": 827422
+  }
+}
