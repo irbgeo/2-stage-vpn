@@ -55,6 +55,16 @@ for c in 6 5; do
 done
 printf '#!/usr/bin/env bash\necho "sshpass $* | SSHPASS=${SSHPASS-<unset>}" >>"$CALLS"\n' >"$TMP/bin/sshpass"
 
+# Password in the file but no sshpass installed: a clear hint, no ssh call.
+mkdir "$TMP/nosshpass" && cp "$TMP/bin/ssh" "$TMP/nosshpass/"
+if [[ ! -x /usr/bin/sshpass && ! -x /bin/sshpass ]]; then
+  : >"$TMP/calls"
+  out="$(env -u SSHPASS CALLS="$TMP/calls" PATH="$TMP/nosshpass:/usr/bin:/bin" ENTRY_ACCESS_FILE="$TMP/pw.yaml" \
+    bash -c 'source "$0/lib.sh" && remote_entry true' "$DIR" 2>&1)"
+  check "no sshpass: fails with an install hint, no ssh" "1 1 0" \
+    "$? $(grep -c 'sshpass is not installed' <<<"$out") $(grep -c . "$TMP/calls")"
+fi
+
 # host_of on a missing file: one clear line, not an awk error.
 err="$(ENTRY_ACCESS_FILE="$TMP/none.yaml" bash -c 'source "$0/lib.sh" && host_of "$ENTRY_ACCESS"' "$DIR" 2>&1)"
 check "host_of, missing file: fails with the init hint only" "1|error: $TMP/none.yaml is missing (run: ./scripts/vpnctl.sh init)" "$?|$err"

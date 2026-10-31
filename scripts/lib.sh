@@ -64,6 +64,10 @@ remote_to() {
   password="$(access_value "$file" password)" # not exported: only sshpass gets it
   [[ -n "$host" && -n "$user" ]] || { echo "error: no host or user in $file" >&2; return 1; }
   if [[ -n "$password" ]]; then
+    command -v sshpass >/dev/null || {
+      echo "error: $file has a password, but sshpass is not installed. Install it (macOS: brew install sshpass) or add an ssh key and remove the password line" >&2
+      return 1
+    }
     local rc=0
     SSHPASS="$password" sshpass -e ssh -o ConnectTimeout=15 -p "${port:-22}" "$user@$host" "$@" || rc=$?
     # sshpass can not answer ssh's questions; its own codes say what went wrong

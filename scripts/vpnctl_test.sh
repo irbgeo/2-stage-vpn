@@ -67,8 +67,8 @@ check "add: the private key never leaves this machine" "0" "$(grep -c "$priv" "$
 check "add: no secret in ssh argv" "0 0 0" "$(grep -cF "$priv" "$TMP/calls") $(grep -cF "$psk" "$TMP/calls") $(grep -cF "$pub_sent" "$TMP/calls")"
 check "add: QR printed, the conf text is not" "1 1 0" \
   "$(grep -c '^qrencode -t ansiutf8' "$TMP/calls") $(grep -c '^QR$' "$TMP/out") $(grep -cF "$priv" "$TMP/out")"
-check "add: asks to save, no answer: no copy here" "1 0" \
-  "$(grep -c 'Save a copy to .*/anna.conf? \[y/N\]' "$TMP/out") $([[ -e "$W/anna.conf" ]] && echo 1 || echo 0)"
+check "add: does not ask to save a copy, says where the conf is" "0 0 1" \
+  "$(grep -c 'Save a copy' "$TMP/out") $([[ -e "$W/anna.conf" ]] && echo 1 || echo 0) $(grep -c "kept in $C" "$TMP/out")"
 
 vc add anna
 check "add an existing local name: refused, no ssh" "1 1 0" "$([[ $? -ne 0 ]] && echo 1) $(grep -c 'error: .*anna.conf already exists' "$TMP/out") $(grep -c '^ssh' "$TMP/calls")"
